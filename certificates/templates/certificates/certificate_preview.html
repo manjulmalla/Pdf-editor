@@ -1,0 +1,143 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Certificate Preview - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>✅ Certificate Generated Successfully!</h2>
+    
+    <div style="background: #d4edda; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+        <p style="color: #155724;">
+            Your certificate has been generated and saved. You can now download it or view the details below.
+        </p>
+    </div>
+    
+    <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+        <a href="{% url 'certificate_download' generated.id %}" class="btn btn-success">
+            📥 Download PDF
+        </a>
+        <a href="{% url 'certificate_fill' template.id %}" class="btn">
+            ➕ Generate Another
+        </a>
+        <a href="{% url 'template_list' %}" class="btn btn-secondary">
+            📋 Back to Templates
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📄 Certificate Details</h2>
+    
+    <h3 style="color: #667eea; margin-bottom: 15px;">Personal Information</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">Full Name</th>
+            <td>{{ data.full_name }}</td>
+        </tr>
+        <tr>
+            <th>Sex</th>
+            <td>{{ data.sex }}</td>
+        </tr>
+        <tr>
+            <th>Date of Birth</th>
+            <td>{{ data.dob_year }}-{{ data.dob_month }}-{{ data.dob_day }}</td>
+        </tr>
+    </table>
+    
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Birth Information</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">District</th>
+            <td>{{ data.birth_district|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>VDC/Municipality</th>
+            <td>{{ data.birth_vdc|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Ward Number</th>
+            <td>{{ data.birth_ward|default:"-" }}</td>
+        </tr>
+    </table>
+    
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Permanent Address</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">District</th>
+            <td>{{ data.permanent_district|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Municipality/VDC</th>
+            <td>{{ data.permanent_municipality|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Ward Number</th>
+            <td>{{ data.permanent_ward|default:"-" }}</td>
+        </tr>
+    </table>
+    
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Parent Information</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">Father's Name</th>
+            <td>{{ data.father_name|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Father's Address</th>
+            <td>{{ data.father_address|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Mother's Name</th>
+            <td>{{ data.mother_name|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Mother's Address</th>
+            <td>{{ data.mother_address|default:"-" }}</td>
+        </tr>
+    </table>
+    
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Citizenship Information</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">Type of Citizenship</th>
+            <td>{{ data.type_of_citizenship|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Certificate Number</th>
+            <td>{{ data.certificate_number|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Issued Date</th>
+            <td>{{ data.issued_date|default:"-" }}</td>
+        </tr>
+    </table>
+    
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Issuing Authority</h3>
+    <table class="table">
+        <tr>
+            <th style="width: 200px;">Officer Name</th>
+            <td>{{ data.issuing_officer_name|default:"-" }}</td>
+        </tr>
+        <tr>
+            <th>Designation</th>
+            <td>{{ data.issuing_officer_designation|default:"-" }}</td>
+        </tr>
+    </table>
+    
+    {% if data.remarks %}
+    <h3 style="color: #667eea; margin: 20px 0 15px;">Remarks</h3>
+    <table class="table">
+        <tr>
+            <td>{{ data.remarks }}</td>
+        </tr>
+    </table>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>ℹ️ Certificate Information</h2>
+    <p><strong>Template:</strong> {{ template.name }}</p>
+    <p><strong>Generated:</strong> {{ generated.created_at|date:"M d, Y H:i" }}</p>
+    <p><strong>Certificate ID:</strong> {{ generated.id }}</p>
+</div>
+{% endblock %}

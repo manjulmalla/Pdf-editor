@@ -1,0 +1,52 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Certificate History{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📜 Generated Certificates History</h2>
+    
+    {% if certificates %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Template</th>
+                <th>Name</th>
+                <th>Generated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cert in certificates %}
+            <tr>
+                <td>{{ cert.id }}</td>
+                <td>{{ cert.template.name }}</td>
+                <td>{{ cert.filled_data.full_name|default:"-" }}</td>
+                <td>{{ cert.created_at|date:"M d, Y H:i" }}</td>
+                <td class="actions">
+                    <a href="{% url 'certificate_download' cert.id %}" class="btn btn-success">Download</a>
+                    <a href="{% url 'certificate_preview_data' cert.id %}" class="btn">View Data</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No certificates have been generated yet.</p>
+        <a href="{% url 'template_list' %}" class="btn">Go to Templates</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>ℹ️ About History</h2>
+    <p>This page shows all certificates that have been generated using the system.</p>
+    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+        <li>Each certificate is saved with its filled data for future reference</li>
+        <li>You can download any previously generated certificate</li>
+        <li>View the data that was used to generate each certificate</li>
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Upload Template{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>➕ Upload Certificate Template</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="name">Template Name *</label>
+            <input type="text" id="name" name="name" required 
+                   placeholder="e.g., Citizenship Certificate">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" 
+                      placeholder="Describe the purpose of this template..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="template_file">Template PDF File *</label>
+            <input type="file" id="template_file" name="template_file" 
+                   accept=".pdf" required>
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Upload a PDF file with placeholders like {{full_name}}, {{sex}}, etc.
+            </small>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button type="submit" class="btn">Upload Template</button>
+            <a href="{% url 'template_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📝 Template Guidelines</h2>
+    <ul style="margin-left: 20px; line-height: 2;">
+        <li>Use PDF format for template files</li>
+        <li>Include placeholders in the format <code>{{field_name}}</code></li>
+        <li>Supported placeholders: full_name, sex, dob_year, dob_month, dob_day, birth_district, birth_vdc, birth_ward, permanent_district, permanent_municipality, permanent_ward, father_name, father_address, mother_name, mother_address, type_of_citizenship, issued_date, issuing_officer_name, issuing_officer_designation, certificate_number, remarks</li>
+        <li>The system will replace these placeholders with actual data when generating certificates</li>
+    </ul>
+</div>
+{% endblock %}

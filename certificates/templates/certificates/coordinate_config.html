@@ -1,0 +1,104 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Configure Coordinates - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📐 Configure Text Coordinates - {{ template.name }}</h2>
+    
+    <div style="background: #d1ecf1; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+        <p style="color: #0c5460;">
+            <strong>ℹ️ About Coordinate Configuration:</strong><br>
+            Configure the exact X, Y coordinates (in points) where each field should be placed on the PDF template.
+            <br>1 point = 1/72 inch. Use a PDF editor to measure exact positions on your template.
+        </p>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>X Coordinate</th>
+                    <th>Y Coordinate</th>
+                    <th>Font Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field_key, field_label in fields.items %}
+                <tr>
+                    <td>
+                        <strong>{{ field_label }}</strong><br>
+                        <small style="color: #666;">{{ field_key }}</small>
+                    </td>
+                    <td>
+                        <input type="number" name="{{ field_key }}_x" 
+                               value="{{ coordinates.field_key.x|default:150 }}" 
+                               style="width: 80px; padding: 5px;">
+                    </td>
+                    <td>
+                        <input type="number" name="{{ field_key }}_y" 
+                               value="{{ coordinates.field_key.y|default:700 }}" 
+                               style="width: 80px; padding: 5px;">
+                    </td>
+                    <td>
+                        <input type="number" name="{{ field_key }}_font_size" 
+                               value="{{ coordinates.field_key.font_size|default:12 }}" 
+                               style="width: 60px; padding: 5px;" min="8" max="24">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 30px;">
+            <button type="submit" class="btn">Save Configuration</button>
+            <a href="{% url 'template_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>💡 Tips for Coordinate Mapping</h2>
+    <ul style="margin-left: 20px; line-height: 2;">
+        <li><strong>Origin Point:</strong> (0, 0) is at the bottom-left corner of the PDF</li>
+        <li><strong>X-Axis:</strong> Increases from left to right</li>
+        <li><strong>Y-Axis:</strong> Increases from bottom to top</li>
+        <li><strong>Page Size:</strong> A4 is approximately 595 x 842 points</li>
+        <li><strong>Measuring:</strong> Use a PDF editor like Adobe Acrobat or Foxit Reader to measure exact positions</li>
+        <li><strong>Font Size:</strong> Typically 10-14 points for certificate text</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2>📏 Default Coordinates Reference</h2>
+    <p>These are the default coordinates. Adjust them based on your specific template:</p>
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; font-family: monospace; font-size: 12px;">
+        <pre>
+full_name: x=150, y=700
+sex: x=150, y=680
+dob_year: x=150, y=660
+dob_month: x=250, y=660
+dob_day: x=350, y=660
+birth_district: x=150, y=620
+birth_vdc: x=150, y=600
+birth_ward: x=150, y=580
+permanent_district: x=150, y=540
+permanent_municipality: x=150, y=520
+permanent_ward: x=150, y=500
+father_name: x=150, y=460
+father_address: x=150, y=440
+mother_name: x=150, y=400
+mother_address: x=150, y=380
+type_of_citizenship: x=150, y=340
+certificate_number: x=150, y=320
+issued_date: x=150, y=300
+issuing_officer_name: x=150, y=260
+issuing_officer_designation: x=150, y=240
+remarks: x=150, y=200
+        </pre>
+    </div>
+</div>
+{% endblock %}

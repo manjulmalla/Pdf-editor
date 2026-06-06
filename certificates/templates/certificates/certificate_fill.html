@@ -1,0 +1,204 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Fill Certificate - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📝 Fill Certificate - {{ template.name }}</h2>
+    
+    <form method="post" action="{% url 'certificate_generate' template.id %}">
+        {% csrf_token %}
+        
+        <h3 style="color: #667eea; margin-bottom: 20px;">Personal Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="full_name">Full Name *</label>
+                <input type="text" id="full_name" name="full_name" required 
+                       value="{{ data.full_name|default:'' }}" 
+                       placeholder="Enter full name (English or Nepali)">
+            </div>
+            
+            <div class="form-group">
+                <label for="sex">Sex *</label>
+                <select id="sex" name="sex" required>
+                    <option value="">Select Sex</option>
+                    <option value="Male" {% if data.sex == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if data.sex == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Other" {% if data.sex == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Date of Birth</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dob_year">Year *</label>
+                <input type="number" id="dob_year" name="dob_year" required 
+                       value="{{ data.dob_year|default:'' }}" 
+                       placeholder="e.g., 2050" min="1900" max="2090">
+            </div>
+            
+            <div class="form-group">
+                <label for="dob_month">Month *</label>
+                <input type="number" id="dob_month" name="dob_month" required 
+                       value="{{ data.dob_month|default:'' }}" 
+                       placeholder="e.g., 1" min="1" max="12">
+            </div>
+            
+            <div class="form-group">
+                <label for="dob_day">Day *</label>
+                <input type="number" id="dob_day" name="dob_day" required 
+                       value="{{ data.dob_day|default:'' }}" 
+                       placeholder="e.g., 15" min="1" max="31">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Birth Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="birth_district">Birth District</label>
+                <input type="text" id="birth_district" name="birth_district" 
+                       value="{{ data.birth_district|default:'' }}" 
+                       placeholder="Enter birth district">
+            </div>
+            
+            <div class="form-group">
+                <label for="birth_vdc">Birth VDC/Municipality</label>
+                <input type="text" id="birth_vdc" name="birth_vdc" 
+                       value="{{ data.birth_vdc|default:'' }}" 
+                       placeholder="Enter birth VDC/Municipality">
+            </div>
+            
+            <div class="form-group">
+                <label for="birth_ward">Birth Ward Number</label>
+                <input type="text" id="birth_ward" name="birth_ward" 
+                       value="{{ data.birth_ward|default:'' }}" 
+                       placeholder="Enter ward number">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Permanent Address</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="permanent_district">Permanent District</label>
+                <input type="text" id="permanent_district" name="permanent_district" 
+                       value="{{ data.permanent_district|default:'' }}" 
+                       placeholder="Enter permanent district">
+            </div>
+            
+            <div class="form-group">
+                <label for="permanent_municipality">Permanent Municipality/VDC</label>
+                <input type="text" id="permanent_municipality" name="permanent_municipality" 
+                       value="{{ data.permanent_municipality|default:'' }}" 
+                       placeholder="Enter permanent municipality/VDC">
+            </div>
+            
+            <div class="form-group">
+                <label for="permanent_ward">Permanent Ward Number</label>
+                <input type="text" id="permanent_ward" name="permanent_ward" 
+                       value="{{ data.permanent_ward|default:'' }}" 
+                       placeholder="Enter ward number">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Parent Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="father_name">Father's Name</label>
+                <input type="text" id="father_name" name="father_name" 
+                       value="{{ data.father_name|default:'' }}" 
+                       placeholder="Enter father's name">
+            </div>
+            
+            <div class="form-group">
+                <label for="father_address">Father's Address</label>
+                <input type="text" id="father_address" name="father_address" 
+                       value="{{ data.father_address|default:'' }}" 
+                       placeholder="Enter father's address">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="mother_name">Mother's Name</label>
+                <input type="text" id="mother_name" name="mother_name" 
+                       value="{{ data.mother_name|default:'' }}" 
+                       placeholder="Enter mother's name">
+            </div>
+            
+            <div class="form-group">
+                <label for="mother_address">Mother's Address</label>
+                <input type="text" id="mother_address" name="mother_address" 
+                       value="{{ data.mother_address|default:'' }}" 
+                       placeholder="Enter mother's address">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Citizenship Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="type_of_citizenship">Type of Citizenship</label>
+                <select id="type_of_citizenship" name="type_of_citizenship">
+                    <option value="">Select Type</option>
+                    <option value="By Birth" {% if data.type_of_citizenship == 'By Birth' %}selected{% endif %}>By Birth</option>
+                    <option value="By Descent" {% if data.type_of_citizenship == 'By Descent' %}selected{% endif %}>By Descent</option>
+                    <option value="By Naturalization" {% if data.type_of_citizenship == 'By Naturalization' %}selected{% endif %}>By Naturalization</option>
+                    <option value="By Honorary" {% if data.type_of_citizenship == 'By Honorary' %}selected{% endif %}>By Honorary</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="certificate_number">Certificate Number</label>
+                <input type="text" id="certificate_number" name="certificate_number" 
+                       value="{{ data.certificate_number|default:'' }}" 
+                       placeholder="Enter certificate number">
+            </div>
+            
+            <div class="form-group">
+                <label for="issued_date">Issued Date</label>
+                <input type="date" id="issued_date" name="issued_date" 
+                       value="{{ data.issued_date|default:'' }}">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Issuing Authority</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="issuing_officer_name">Issuing Officer Name</label>
+                <input type="text" id="issuing_officer_name" name="issuing_officer_name" 
+                       value="{{ data.issuing_officer_name|default:'' }}" 
+                       placeholder="Enter officer name">
+            </div>
+            
+            <div class="form-group">
+                <label for="issuing_officer_designation">Designation</label>
+                <input type="text" id="issuing_officer_designation" name="issuing_officer_designation" 
+                       value="{{ data.issuing_officer_designation|default:'' }}" 
+                       placeholder="Enter designation">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 30px 0 20px;">Additional Information</h3>
+        <div class="form-group">
+            <label for="remarks">Remarks</label>
+            <textarea id="remarks" name="remarks" 
+                      placeholder="Enter any additional remarks...">{{ data.remarks|default:'' }}</textarea>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button type="submit" class="btn btn-success">Generate PDF Certificate</button>
+            <a href="{% url 'template_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>💡 Tips</h2>
+    <ul style="margin-left: 20px; line-height: 2;">
+        <li>Fields marked with * are required</li>
+        <li>You can enter text in both English and Nepali (Unicode)</li>
+        <li>For Nepali text, use standard Nepali Unicode input</li>
+        <li>The generated PDF will maintain the original template formatting</li>
+    </ul>
+</div>
+{% endblock %}

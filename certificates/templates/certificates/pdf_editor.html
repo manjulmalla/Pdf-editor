@@ -1,0 +1,483 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}PDF Editor - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>✏️ PDF Editor - {{ template.name }}</h2>
+    
+    <div style="background: #d1ecf1; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <p style="color: #0c5460;">
+            <strong>ℹ️ Instructions:</strong><br>
+            1. Click "Add Text Box" to create a new editable field<br>
+            2. Drag text boxes to position them on the PDF<br>
+            3. Resize text boxes by dragging the corners<br>
+            4. Double-click a text box to edit its content<br>
+            5. Click "Save Fields" to save all field positions<br>
+            6. Click "Generate PDF" to create the final certificate
+        </p>
+    </div>
+    
+    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <button id="addTextBox" class="btn">➕ Add Text Box</button>
+        <button id="saveFields" class="btn btn-success">💾 Save Fields</button>
+        <button id="generatePdf" class="btn btn-success">📄 Generate PDF</button>
+        <a href="{% url 'template_list' %}" class="btn btn-secondary">← Back to Templates</a>
+    </div>
+    
+    <div id="editorContainer" style="position: relative; border: 2px solid #ddd; border-radius: 5px; overflow: hidden; background: #f0f0f0; width: 100%; height: 600px;">
+        <!-- PDF.js canvas for rendering PDF -->
+        <canvas id="pdfCanvas" style="position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
+        <!-- Fabric.js canvas overlay for text boxes -->
+        <canvas id="fabricCanvas" style="position: absolute; top: 0; left: 0; z-index: 10;"></canvas>
+    </div>
+    
+    <div id="fieldList" style="margin-top: 20px;">
+        <h3>📝 Text Boxes</h3>
+        <div id="fieldsContainer"></div>
+    </div>
+</div>
+
+<!-- Text Edit Modal -->
+<div id="textEditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; min-width: 400px;">
+        <h3 style="margin-bottom: 20px;">Edit Text</h3>
+        <div class="form-group">
+            <label for="modalTextInput">Text Content:</label>
+            <textarea id="modalTextInput" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" placeholder="Enter text (English or Nepali)"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="modalFontSize">Font Size:</label>
+            <input type="number" id="modalFontSize" value="12" min="8" max="72" style="width: 100px; padding: 5px;">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button id="saveTextBtn" class="btn btn-success">Save</button>
+            <button id="cancelTextBtn" class="btn btn-secondary">Cancel</button>
+            <button id="deleteTextBtn" class="btn btn-danger">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF.js and Fabric.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+<script>
+    // Set PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    // Template and field data
+    const templateId = {{ template.id }};
+    const pdfUrl = '{{ template.template_file.url }}';
+    let fabricCanvas = null;
+    let editableFields = [];
+    let currentEditingField = null;
+    let pdfDoc = null;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let scale = 1.5;
+    let canvas = document.getElementById('pdfCanvas');
+    let ctx = canvas.getContext('2d');
+    
+    // Load existing fields from server
+    const existingFields = {{ existing_fields|safe }};
+    
+    // Initialize the editor
+    async function initEditor() {
+        try {
+            console.log('Initializing PDF editor...');
+            console.log('Loading PDF from:', pdfUrl);
+            
+            // Load PDF document
+            const loadingTask = pdfjsLib.getDocument(pdfUrl);
+            pdfDoc = await loadingTask.promise;
+            
+            console.log('PDF loaded successfully, pages:', pdfDoc.numPages);
+            
+            // Render first page
+            await renderPage(1);
+            
+            // Set up Fabric.js canvas
+            const container = document.getElementById('editorContainer');
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            
+            console.log('Container dimensions:', containerWidth, 'x', containerHeight);
+            
+            const fabricCanvasElement = document.getElementById('fabricCanvas');
+            fabricCanvasElement.width = containerWidth;
+            fabricCanvasElement.height = containerHeight;
+            
+            // Initialize Fabric.js canvas
+            fabricCanvas = new fabric.Canvas('fabricCanvas', {
+                selection: true,
+                preserveObjectStacking: true,
+                width: containerWidth,
+                height: containerHeight
+            });
+            
+            console.log('Fabric.js canvas initialized');
+            
+            // Load existing fields
+            existingFields.forEach(field => {
+                addTextBox(field.x, field.y, field.width, field.height, field.text, field.font_size, field.field_name);
+            });
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            console.log('Editor initialized successfully');
+        } catch (error) {
+            console.error('Error initializing editor:', error);
+            alert('Error initializing editor: ' + error.message);
+        }
+    }
+    
+    // Render PDF page
+    async function renderPage(num) {
+        pageRendering = true;
+        
+        try {
+            // Get page
+            const page = await pdfDoc.getPage(num);
+            
+            // Set viewport
+            const viewport = page.getViewport({ scale: scale });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            // Render PDF page into canvas context
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+            pageRendering = false;
+            
+            console.log('Page', num, 'rendered successfully');
+            
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+        } catch (error) {
+            console.error('Error rendering page:', error);
+            pageRendering = false;
+        }
+    }
+    
+    // Add a new text box
+    function addTextBox(x = 100, y = 100, width = 200, height = 50, text = '', fontSize = 12, fieldName = null) {
+        if (!fabricCanvas) {
+            console.error('Fabric.js canvas not initialized');
+            alert('Error: Canvas not initialized. Please refresh the page.');
+            return;
+        }
+        
+        const fieldId = fieldName || 'field_' + Date.now();
+        
+        const textbox = new fabric.Textbox(text, {
+            left: x,
+            top: y,
+            width: width,
+            height: height,
+            fontSize: fontSize,
+            fontFamily: 'Mangal, Arial, sans-serif',
+            fill: '#000000',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            borderColor: '#667eea',
+            cornerColor: '#667eea',
+            cornerSize: 10,
+            transparentCorners: false,
+            padding: 5,
+            fieldId: fieldId,
+            fieldName: fieldName
+        });
+        
+        fabricCanvas.add(textbox);
+        editableFields.push({
+            id: fieldId,
+            fabricObject: textbox,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            text: text,
+            fontSize: fontSize,
+            fieldName: fieldName
+        });
+        
+        updateFieldList();
+        console.log('Text box added:', fieldId);
+        return textbox;
+    }
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        // Add text box button
+        const addTextBoxBtn = document.getElementById('addTextBox');
+        if (addTextBoxBtn) {
+            addTextBoxBtn.addEventListener('click', () => {
+                console.log('Add Text Box button clicked');
+                addTextBox();
+            });
+            console.log('Add Text Box button event listener attached');
+        } else {
+            console.error('Add Text Box button not found');
+        }
+        
+        // Save fields button
+        const saveFieldsBtn = document.getElementById('saveFields');
+        if (saveFieldsBtn) {
+            saveFieldsBtn.addEventListener('click', saveFields);
+        }
+        
+        // Generate PDF button
+        const generatePdfBtn = document.getElementById('generatePdf');
+        if (generatePdfBtn) {
+            generatePdfBtn.addEventListener('click', generatePdf);
+        }
+        
+        // Double-click to edit text
+        if (fabricCanvas) {
+            fabricCanvas.on('mouse:dblclick', (options) => {
+                if (options.target && options.target.fieldId) {
+                    openTextEditModal(options.target);
+                }
+            });
+            
+            // Object modified - update field data
+            fabricCanvas.on('object:modified', (options) => {
+                if (options.target && options.target.fieldId) {
+                    updateFieldData(options.target);
+                }
+            });
+        }
+        
+        // Modal buttons
+        const saveTextBtn = document.getElementById('saveTextBtn');
+        if (saveTextBtn) {
+            saveTextBtn.addEventListener('click', saveTextFromModal);
+        }
+        
+        const cancelTextBtn = document.getElementById('cancelTextBtn');
+        if (cancelTextBtn) {
+            cancelTextBtn.addEventListener('click', closeTextEditModal);
+        }
+        
+        const deleteTextBtn = document.getElementById('deleteTextBtn');
+        if (deleteTextBtn) {
+            deleteTextBtn.addEventListener('click', deleteFieldFromModal);
+        }
+    }
+    
+    // Update field data from fabric object
+    function updateFieldData(fabricObj) {
+        const field = editableFields.find(f => f.id === fabricObj.fieldId);
+        if (field) {
+            field.x = fabricObj.left;
+            field.y = fabricObj.top;
+            field.width = fabricObj.width * fabricObj.scaleX;
+            field.height = fabricObj.height * fabricObj.scaleY;
+            field.text = fabricObj.text;
+            field.fontSize = fabricObj.fontSize;
+        }
+    }
+    
+    // Open text edit modal
+    function openTextEditModal(fabricObj) {
+        currentEditingField = fabricObj;
+        document.getElementById('modalTextInput').value = fabricObj.text;
+        document.getElementById('modalFontSize').value = fabricObj.fontSize;
+        document.getElementById('textEditModal').style.display = 'block';
+    }
+    
+    // Close text edit modal
+    function closeTextEditModal() {
+        document.getElementById('textEditModal').style.display = 'none';
+        currentEditingField = null;
+    }
+    
+    // Save text from modal
+    function saveTextFromModal() {
+        if (currentEditingField) {
+            const newText = document.getElementById('modalTextInput').value;
+            const newFontSize = parseInt(document.getElementById('modalFontSize').value);
+            
+            currentEditingField.set({
+                text: newText,
+                fontSize: newFontSize
+            });
+            
+            updateFieldData(currentEditingField);
+            fabricCanvas.renderAll();
+            updateFieldList();
+        }
+        closeTextEditModal();
+    }
+    
+    // Delete field from modal
+    function deleteFieldFromModal() {
+        if (currentEditingField) {
+            fabricCanvas.remove(currentEditingField);
+            editableFields = editableFields.filter(f => f.id !== currentEditingField.fieldId);
+            updateFieldList();
+        }
+        closeTextEditModal();
+    }
+    
+    // Update field list display
+    function updateFieldList() {
+        const container = document.getElementById('fieldsContainer');
+        container.innerHTML = '';
+        
+        editableFields.forEach((field, index) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd;';
+            div.innerHTML = `
+                <strong>${field.fieldName || 'Field ' + (index + 1)}</strong><br>
+                <small>Position: (${Math.round(field.x)}, ${Math.round(field.y)})</small><br>
+                <small>Size: ${Math.round(field.width)} x ${Math.round(field.height)}</small><br>
+                <small>Text: ${field.text.substring(0, 30)}${field.text.length > 30 ? '...' : ''}</small>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    // Save fields to server
+    async function saveFields() {
+        // Update all field data from fabric objects
+        editableFields.forEach(field => {
+            const fabricObj = field.fabricObject;
+            if (fabricObj) {
+                field.x = fabricObj.left;
+                field.y = fabricObj.top;
+                field.width = fabricObj.width * fabricObj.scaleX;
+                field.height = fabricObj.height * fabricObj.scaleY;
+                field.text = fabricObj.text;
+                field.fontSize = fabricObj.fontSize;
+            }
+        });
+        
+        const fieldsData = editableFields.map(field => ({
+            field_name: field.fieldName || field.id,
+            x: field.x,
+            y: field.y,
+            width: field.width,
+            height: field.height,
+            text: field.text,
+            font_size: field.fontSize
+        }));
+        
+        try {
+            const response = await fetch(`/templates/${templateId}/save-fields/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ fields: fieldsData })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                alert('Fields saved successfully!');
+            } else {
+                alert('Error saving fields: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error saving fields: ' + error.message);
+        }
+    }
+    
+    // Generate PDF
+    async function generatePdf() {
+        // Update all field data from fabric objects
+        editableFields.forEach(field => {
+            const fabricObj = field.fabricObject;
+            if (fabricObj) {
+                field.x = fabricObj.left;
+                field.y = fabricObj.top;
+                field.width = fabricObj.width * fabricObj.scaleX;
+                field.height = fabricObj.height * fabricObj.scaleY;
+                field.text = fabricObj.text;
+                field.fontSize = fabricObj.fontSize;
+            }
+        });
+        
+        const fieldsData = editableFields.map(field => ({
+            field_name: field.fieldName || field.id,
+            x: field.x,
+            y: field.y,
+            width: field.width,
+            height: field.height,
+            text: field.text,
+            font_size: field.fontSize
+        }));
+        
+        try {
+            const response = await fetch(`/templates/${templateId}/generate-from-editor/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ fields: fieldsData })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                // Download the generated PDF
+                window.location.href = result.download_url;
+            } else {
+                alert('Error generating PDF: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error generating PDF: ' + error.message);
+        }
+    }
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initEditor);
+</script>
+
+<style>
+    #editorContainer {
+        background: #f0f0f0;
+        min-height: 600px;
+    }
+    
+    #pdfCanvas {
+        border: 1px solid #ccc;
+    }
+    
+    #fabricCanvas {
+        border: 1px solid #ccc;
+    }
+    
+    #textEditModal textarea {
+        font-family: 'Mangal', 'Arial', sans-serif;
+    }
+    
+    #textEditModal input[type="number"] {
+        font-family: 'Mangal', 'Arial', sans-serif;
+    }
+</style>
+{% endblock %}

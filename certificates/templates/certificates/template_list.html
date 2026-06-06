@@ -1,0 +1,81 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Certificate Templates{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📋 Certificate Templates</h2>
+    
+    {% if templates %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for template in templates %}
+            <tr>
+                <td><strong>{{ template.name }}</strong></td>
+                <td>{{ template.description|default:"-" }}</td>
+                <td>{{ template.created_at|date:"M d, Y H:i" }}</td>
+                <td>{{ template.updated_at|date:"M d, Y H:i" }}</td>
+                <td class="actions">
+                    <a href="{% url 'pdf_editor' template.id %}" class="btn btn-success">✏️ Manual Editor</a>
+                    <a href="{% url 'certificate_fill' template.id %}" class="btn">📝 Form Fill</a>
+                    <a href="{% url 'coordinate_config' template.id %}" class="btn">📐 Coordinates</a>
+                    <a href="{% url 'template_edit' template.id %}" class="btn">Edit</a>
+                    <a href="{% url 'template_delete' template.id %}" class="btn btn-danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No certificate templates found.</p>
+        <a href="{% url 'template_upload' %}" class="btn">Upload Your First Template</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>ℹ️ How to Use</h2>
+    <ol style="margin-left: 20px; line-height: 2;">
+        <li><strong>Upload Template:</strong> Upload a PDF template with the original certificate layout</li>
+        <li><strong>Manual Editor:</strong> Click "Manual Editor" to add, drag, resize, and type text boxes directly on the PDF</li>
+        <li><strong>Form Fill:</strong> Use "Form Fill" for a traditional form-based approach with predefined fields</li>
+        <li><strong>Configure Coordinates:</strong> Set exact X, Y coordinates for each field (for form-based approach)</li>
+        <li><strong>Generate PDF:</strong> Click generate to overlay text on the original template and create a print-ready PDF</li>
+        <li><strong>Download/Print:</strong> Download the generated PDF or open it in print preview</li>
+    </ol>
+    
+    <h3 style="margin-top: 20px; color: #667eea;">Manual Editor Features</h3>
+    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+        <li><strong>Add Text Box:</strong> Click "Add Text Box" to create a new editable field</li>
+        <li><strong>Drag & Position:</strong> Drag text boxes to position them exactly where you want</li>
+        <li><strong>Resize:</strong> Drag corners to resize text boxes</li>
+        <li><strong>Edit Text:</strong> Double-click a text box to edit its content</li>
+        <li><strong>English & Nepali:</strong> Type in both English and Nepali (Unicode)</li>
+        <li><strong>Save Layout:</strong> Save field positions for reuse</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2>📐 Coordinate System</h2>
+    <p>For the form-based approach, you can configure exact coordinates:</p>
+    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+        <li><strong>X Coordinate:</strong> Horizontal position (left to right)</li>
+        <li><strong>Y Coordinate:</strong> Vertical position (bottom to top)</li>
+        <li><strong>Font Size:</strong> Size of the text in points</li>
+        <li><strong>Origin:</strong> (0, 0) is at the bottom-left corner of the PDF</li>
+    </ul>
+    <p style="margin-top: 10px;">
+        <strong>Tip:</strong> Use the Manual Editor for visual placement, or configure coordinates manually.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'certificates/base.html' %}
+
+{% block title %}Edit Template{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>✏️ Edit Certificate Template</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="name">Template Name *</label>
+            <input type="text" id="name" name="name" required 
+                   value="{{ template.name }}" placeholder="e.g., Citizenship Certificate">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" 
+                      placeholder="Describe the purpose of this template...">{{ template.description }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="template_file">Template PDF File</label>
+            {% if template.template_file %}
+            <p style="margin-bottom: 10px; color: #666;">
+                Current file: <strong>{{ template.template_file.name }}</strong>
+            </p>
+            {% endif %}
+            <input type="file" id="template_file" name="template_file" accept=".pdf">
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Leave empty to keep the current file. Upload a new PDF to replace it.
+            </small>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{% url 'template_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>ℹ️ Template Information</h2>
+    <p><strong>Created:</strong> {{ template.created_at|date:"M d, Y H:i" }}</p>
+    <p><strong>Last Updated:</strong> {{ template.updated_at|date:"M d, Y H:i" }}</p>
+</div>
+{% endblock %}
